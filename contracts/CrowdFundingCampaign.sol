@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-contract CrowdFundingCompaign {
+contract CrowdFundingCampaign {
   enum State {
     Preparing,
     Active,
@@ -27,12 +27,12 @@ contract CrowdFundingCompaign {
   event Refund(address to, uint256 amount);
 
   modifier onlyOwner {
-    require(msg.sender == owner, "CrowdfundingCompaign: not owner");
+    require(msg.sender == owner, "CrowdfundingCampaign: not owner");
     _;
   }
 
   modifier inState(State _state) {
-    require(_state == state, "CrowdfundingCompaign: invalid state");
+    require(_state == state, "CrowdfundingCampaign: invalid state");
     _;
   }
 
@@ -47,10 +47,10 @@ contract CrowdFundingCompaign {
     uint256 _goal,
     uint256 _durationInDays
   ) {
-    require(_owner != address(0), 'CrowdfundingCompaign: invalid owner');
-    require(bytes(_name).length > 0, 'CrowdfundingCompaign: name cannot be empty');
-    require(_goal > 0, "CrowdfundingCompagin: goal must be positive");
-    require(_durationInDays > 0 && _durationInDays <= 90, "CrowdfundingCompaign: invalid duration");
+    require(_owner != address(0), 'CrowdfundingCampaign: invalid owner');
+    require(bytes(_name).length > 0, 'CrowdfundingCampaign: name cannot be empty');
+    require(_goal > 0, "CrowdfundingCampaign: goal must be positive");
+    require(_durationInDays > 0 && _durationInDays <= 90, "CrowdfundingCampaign: invalid duration");
 
     owner = _owner;
     name = _name;
@@ -86,7 +86,7 @@ contract CrowdFundingCompaign {
   // 完成活动函数
   // 截止时间后调用
   function finalize() external inState(State.Active) {
-    require(block.timestamp >= deadline, "compaign not end");
+    require(block.timestamp >= deadline, "campaign not end");
 
     State oldState = state;
     if (totalRaised < goal) {
