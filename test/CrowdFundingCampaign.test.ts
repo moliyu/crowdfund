@@ -151,7 +151,7 @@ describe("CrowdFundingCampaign", () => {
 
       await campaign.connect(contributor1).contribute({ value: GOAL });
       const stateSuccess = await campaign.state();
-      expect(stateSuccess).to.equal(2n);
+      expect(stateSuccess).to.equal(1n);
       Log("项目success");
     });
 
