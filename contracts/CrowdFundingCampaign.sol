@@ -77,10 +77,10 @@ contract CrowdFundingCampaign {
     totalRaised += msg.value;
     emit Contribution(msg.sender, msg.value);
 
-    if (totalRaised >= goal) {
-      state = State.Success;
-      emit StateChanged(State.Active, State.Success);
-    }
+    // if (totalRaised >= goal) {
+    //   state = State.Success;
+    //   emit StateChanged(State.Active, State.Success);
+    // }
   }
 
   // 完成活动函数

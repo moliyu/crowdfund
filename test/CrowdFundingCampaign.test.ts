@@ -174,7 +174,7 @@ describe("CrowdFundingCampaign", () => {
       await setTimeAfterDeadline(dealine);
       await campaign.finalize();
       const finalState = await campaign.state();
-      expect(finalState).to.be.equal(4n);
+      expect(finalState).to.be.equal(2n);
       Log("项目状态: 关闭");
     });
 

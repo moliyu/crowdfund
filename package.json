@@ -2,6 +2,10 @@
   "name": "founding",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "compile": "npx hardhat clean && npx hardhat compile",
+    "deploy:sepolia": "npx hardhat ignition deploy --network sepolia ignition/modules/CrowdFundingFactory.ts"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.6",
     "@nomicfoundation/hardhat-ignition": "^3.0.9",
