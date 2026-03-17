@@ -1,0 +1,42 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-d8bcdbb76b65e935a594ead04b1cc72841de18c7",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/CrowdFundingFactory.sol": "project/contracts/CrowdFundingFactory.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/CrowdFundingCampaign.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract CrowdFundingCampaign {\n  enum State {\n    Preparing,\n    Active,\n    Success,\n    Failed,\n    Close\n  }\n\n  State public state;\n\n  address public immutable owner;\n  string public name;\n  uint256 public immutable goal;\n  uint256 public immutable deadline;\n  uint256 public totalRaised;\n\n  address[] public contributors;\n  mapping(address => uint256) public contributions;\n\n  event StateChanged(State oldState, State newState);\n  event Contribution(address sender, uint256 value);\n  event WithDrawal(address to, uint256 amount);\n  event Refund(address to, uint256 amount);\n\n  modifier onlyOwner {\n    require(msg.sender == owner, \"CrowdfundingCampaign: not owner\");\n    _;\n  }\n\n  modifier inState(State _state) {\n    require(_state == state, \"CrowdfundingCampaign: invalid state\");\n    _;\n  }\n\n  modifier notExpired() {\n    require(block.timestamp < deadline);\n    _;\n  }\n\n  constructor(\n    address _owner,\n    string memory _name,\n    uint256 _goal,\n    uint256 _durationInDays\n  ) {\n    require(_owner != address(0), 'CrowdfundingCampaign: invalid owner');\n    require(bytes(_name).length > 0, 'CrowdfundingCampaign: name cannot be empty');\n    require(_goal > 0, \"CrowdfundingCampaign: goal must be positive\");\n    require(_durationInDays > 0 && _durationInDays <= 90, \"CrowdfundingCampaign: invalid duration\");\n\n    owner = _owner;\n    name = _name;\n    goal = _goal;\n    deadline = block.timestamp + (_durationInDays * 1 days);\n\n    state = State.Preparing;\n  }\n\n  // 活动启动\n  function start() external onlyOwner inState(State.Preparing) {\n    state = State.Active;\n    emit StateChanged(State.Preparing, State.Active);\n  }\n\n  // 贡献资金\n  function contribute() external payable inState(State.Active) notExpired {\n    require(msg.value > 0, \"value must be positive\");\n    if (contributions[msg.sender] == 0) {\n      contributors.push(msg.sender);\n    }\n\n    contributions[msg.sender] += msg.value;\n    totalRaised += msg.value;\n    emit Contribution(msg.sender, msg.value);\n\n    if (totalRaised >= goal) {\n      state = State.Success;\n      emit StateChanged(State.Active, State.Success);\n    }\n  }\n\n  // 完成活动函数\n  // 截止时间后调用\n  function finalize() external inState(State.Active) {\n    require(block.timestamp >= deadline, \"campaign not end\");\n\n    State oldState = state;\n    if (totalRaised < goal) {\n      state = State.Failed;\n    } else {\n      state = State.Success;\n    }\n\n    emit StateChanged(oldState, state);\n  }\n\n  // 提取资金\n  // 必须创建者并且活动已结束才可以调用\n  function withDraw() external inState(State.Success) onlyOwner {\n    state = State.Close;\n\n    uint256 amount = address(this).balance;\n\n    (bool success, ) = owner.call{ value: amount }(\"\");\n    require(success, \"with draw error\");\n\n    emit WithDrawal(owner, amount);\n    emit StateChanged(State.Success, State.Close);\n  }\n\n  // 退款\n  // 活动结束每个人可以申请退款\n  // 一般不在合约中循环调用自动退款 gas\n  function refund() external inState(State.Failed) {\n    uint256 amount = contributions[msg.sender];\n    require(amount > 0, \"no contribution to refund\");\n\n    contributions[msg.sender] = 0;\n\n    (bool success, ) = address(msg.sender).call{ value: amount }(\"\");\n    require(success, \"refund err\");\n\n    emit Refund(msg.sender, amount);\n  }\n\n  // 获取所有贡献者地址\n  function getContributors() external view returns (address[] memory){\n    return contributors;\n  }\n\n  function isActive() external view returns (bool) {\n    return state == State.Active;\n  }\n\n  function getProgress() external view returns (uint256) {\n    if (goal == 0) return 0;\n\n    uint256 progress = totalRaised * 100 / goal;\n    return progress > 100 ? 100 : progress;\n  }\n}"
+      },
+      "project/contracts/CrowdFundingFactory.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\nimport './CrowdFundingCampaign.sol';\n\n/**\n * @title 工厂合约\n * @notice 使用工厂模式来部署多个众筹合约实例\n */\ncontract CrowdFundingFactory {\n  CrowdFundingCampaign[] campaigns;\n\n  mapping(address => uint256[]) public userCampaigns;\n\n  event CampaignCreated(\n    address indexed creator,\n    address indexed campaign,\n    string name,\n    uint256 goal,\n    uint256 deadline\n  );\n\n  // 创建新的众筹\n  function createCampaign(\n    string memory _name,\n    uint256 _goal,\n    uint256 _durationInDays\n  ) external returns (address) {\n    CrowdFundingCampaign campaign = new CrowdFundingCampaign(msg.sender, _name, _goal, _durationInDays);\n\n    campaigns.push(campaign);\n    userCampaigns[msg.sender].push(campaigns.length - 1);\n\n    emit CampaignCreated(\n      msg.sender,\n      address(campaign),\n      _name,\n      _goal,\n      _durationInDays\n    );\n\n    return address(campaign);\n  }\n\n  // 获取所有的活动地址\n  function getCampaigns() external view returns (address[] memory) {\n    uint256 size = campaigns.length;\n    address[] memory addresses = new address[](size);\n    for (uint256 i = 0; i < size; i++) {\n      addresses[i] = address(campaigns[i]);\n    }\n    return addresses;\n  }\n\n  // 获取指定用户的活动地址\n  function getUserCampaigns(address user) external view returns (address[] memory) {\n    uint256[] memory indexes = userCampaigns[user];\n    uint256 size = indexes.length;\n    address[] memory addresses = new address[](size);\n    for (uint256 i; i < size; i++) {\n      addresses[i] = address(campaigns[indexes[i]]);\n    }\n    return addresses;\n  }\n\n  function getCampaignCount() external view returns (uint256) {\n    return campaigns.length;\n  }\n}"
+      }
+    }
+  }
+}

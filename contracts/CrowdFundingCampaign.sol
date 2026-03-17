@@ -19,7 +19,7 @@ contract CrowdFundingCampaign {
   uint256 public totalRaised;
 
   address[] public contributors;
-  mapping(address => uint256) contributions;
+  mapping(address => uint256) public contributions;
 
   event StateChanged(State oldState, State newState);
   event Contribution(address sender, uint256 value);
