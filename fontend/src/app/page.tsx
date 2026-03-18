@@ -1,9 +1,11 @@
 "use client";
 import { Header } from "@/components/Header";
+import { useFactory } from "@/hooks/useFactory";
 import { useWeb3 } from "@/hooks/useWeb3";
 
-export default function page() {
-  const { connectWallet, isConnecting } = useWeb3();
+export default function Page() {
+  const { connectWallet, isConnecting, account } = useWeb3();
+  const {} = useFactory();
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -16,6 +18,8 @@ export default function page() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
       <Header />
+
+      <div className="container">{account && 123}</div>
     </div>
   );
 }

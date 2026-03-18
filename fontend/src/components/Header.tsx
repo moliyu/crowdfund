@@ -18,16 +18,13 @@ export const Header = () => {
           <div className="flex items-center gap-4">
             {account ? (
               <>
-                <button
-                  onClick={disconnect}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 hover:border-primary-300 dark:hover:border-primary-700 transition-all cursor-pointer group"
-                >
+                <button className="btn btn-neutral" onClick={disconnect}>
                   断开连接
                 </button>
               </>
             ) : (
               <button
-                className="cursor-pointer bg-blue-500"
+                className="btn btn-primary"
                 onClick={connectWallet}
                 disabled={isConnecting}
               >
