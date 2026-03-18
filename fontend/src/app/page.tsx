@@ -1,11 +1,27 @@
 "use client";
 import { Header } from "@/components/Header";
-import { useFactory } from "@/hooks/useFactory";
+import { Campaign, State, useFactory } from "@/hooks/useFactory";
 import { useWeb3 } from "@/hooks/useWeb3";
+import { useEffect, useRef, useState } from "react";
+import { ethers } from "ethers";
+import clsx from "clsx";
+import { CreateModal, ModalHandler } from "@/components/CreateModal";
+import { Contribute } from "@/components/Contribute";
+import { useCampaign } from "@/hooks/useCampaign";
 
 export default function Page() {
-  const { connectWallet, isConnecting, account } = useWeb3();
-  const {} = useFactory();
+  const { connectWallet, isConnecting, account, provider } = useWeb3();
+  const { createCrowdFunding, campaigns, fetchCampaigns } = useFactory();
+  const { contribute, start } = useCampaign();
+  const ref = useRef<ModalHandler>(null);
+  const currentRef = useRef<Campaign>(null);
+  const [showContribute, setShowContribute] = useState(false);
+
+  useEffect(() => {
+    if (provider) {
+      fetchCampaigns();
+    }
+  }, [provider]);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -19,7 +35,105 @@ export default function Page() {
       </div>
       <Header />
 
-      <div className="container">{account && 123}</div>
+      <div className="container p-4 mx-auto">
+        <div className="text-right">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              ref.current?.open();
+            }}
+          >
+            新建项目
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {campaigns.map((item) => (
+            <div
+              key={item.address}
+              className="card bg-base-100 shadow-sm border border-base-200 hover:shadow-md transition-shadow"
+            >
+              <div className="card-body">
+                <div className="flex justify-between items-center">
+                  <h2 className="card-title text-lg">{item.name}</h2>
+                  <span
+                    className={clsx("badge badge-sm", {
+                      "badge-warning": item.state === State.Active,
+                      "badge-success": item.state === State.Success,
+                      "badge-error":
+                        item.state === State.Failed ||
+                        item.state === State.Close,
+                      "badge-ghost": item.state === State.Preparing,
+                    })}
+                  >
+                    {State[item.state]}
+                  </span>
+                </div>
+                <div className="text-sm text-base-content/60">
+                  <p>目标: {ethers.formatEther(item.goal)} ETH</p>
+                  <p>已筹: {ethers.formatEther(item.totalRaised)} ETH</p>
+                  <p>
+                    截止:{" "}
+                    {new Date(
+                      Number(item.deadline) * 1000,
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="w-full bg-base-300 h-2 rounded-full mt-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all"
+                    style={{ width: `${Number(item.progress)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-base-content/50 mt-1">
+                  {item.progress}
+                </p>
+                <div className="card-actions justify-end mt-2">
+                  {item.state === State.Preparing && (
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={async () => {
+                        await start(item.address);
+                        fetchCampaigns();
+                      }}
+                    >
+                      启动
+                    </button>
+                  )}
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={item.state === State.Preparing}
+                    onClick={() => {
+                      currentRef.current = item;
+                      setShowContribute(true);
+                    }}
+                  >
+                    赞助
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* {showAdd && <dialog className="modal">
+        </dialog>} */}
+      <CreateModal
+        ref={ref}
+        handleOk={() => {
+          fetchCampaigns();
+        }}
+      />
+
+      <Contribute
+        show={showContribute}
+        handleContribute={async (value) => {
+          if (currentRef.current?.address) {
+            await contribute(currentRef.current.address, value);
+            fetchCampaigns();
+          }
+        }}
+      />
     </div>
   );
 }

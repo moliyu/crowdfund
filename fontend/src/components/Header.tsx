@@ -18,6 +18,7 @@ export const Header = () => {
           <div className="flex items-center gap-4">
             {account ? (
               <>
+                <div>当前链接地址{account}</div>
                 <button className="btn btn-neutral" onClick={disconnect}>
                   断开连接
                 </button>
